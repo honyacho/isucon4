@@ -543,8 +543,6 @@ func routePostInitialize() (int, string) {
 
 	prefix := "/var/log/nginx/alp.log"
 	now := time.Now().Unix()
-	os.Rename(prefix, fmt.Sprint(prefix, ".", now))
-
 	exec.Command("cp", prefix, fmt.Sprint(prefix, ".", now)).Run()
 	exec.Command("tee", prefix).Run()
 
