@@ -2,15 +2,17 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
+	"path"
 	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/go-martini/martini"
 	"github.com/go-redis/redis"
@@ -271,15 +273,31 @@ func routePostAd(r render.Render, req *http.Request, params martini.Params) {
 		"impressions", "0",
 	)
 
-	f, _ := asset.Open()
-	defer f.Close()
-	buf := bytes.NewBuffer(nil)
-	io.Copy(buf, f)
-	asset_data := string(buf.Bytes())
-
-	rd.Set(assetKey(slot, id), asset_data)
 	rd.RPush(slotKey(slot), id)
 	rd.SAdd(advertiserKey(advrId), key)
+
+	// assetをファイルに出力する
+	ext := path.Ext(asset.Filename)
+	f, err := asset.Open()
+	if err != nil {
+		r.Status(400)
+		return
+	}
+	defer f.Close()
+	err = os.MkdirAll(fmt.Sprintf("/home/isucon/webapp/assets/%s", slot), 0777)
+	if err != nil {
+		r.Status(400)
+		fmt.Printf("%s\n", err)
+		return
+	}
+	newFile, err := os.Create(fmt.Sprintf("/home/isucon/webapp/assets/%s/%s%s", slot, id, ext))
+	if err != nil {
+		r.Status(400)
+		fmt.Printf("%s\n", err)
+		return
+	}
+	defer newFile.Close()
+	io.Copy(newFile, f)
 
 	r.JSON(200, getAd(req, slot, id))
 }
@@ -539,6 +557,11 @@ func routePostInitialize() (int, string) {
 	path := getDir("log")
 	os.RemoveAll(path)
 
+	prefix := "/var/log/nginx/alp.log"
+	now := time.Now().Unix()
+	exec.Command("cp", prefix, fmt.Sprint(prefix, ".", now)).Run()
+	exec.Command("tee", prefix).Run()
+
 	return 200, "OK"
 }
 
@@ -563,5 +586,8 @@ func main() {
 		m.Get("/final_report", routeGetFinalReport)
 	})
 	m.Post("/initialize", routePostInitialize)
-	http.ListenAndServe(":8080", m)
+	err := http.ListenAndServe(":8080", m)
+	if err != nil {
+		panic(err)
+	}
 }
