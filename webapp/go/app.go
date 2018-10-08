@@ -61,7 +61,7 @@ var rd *redis.Client
 
 func init() {
 	rd = redis.NewTCPClient(&redis.Options{
-		Addr: "localhost:6379",
+		Addr: "172.31.28.46:6379",
 		DB:   0,
 	})
 }
@@ -560,7 +560,7 @@ func routePostInitialize() (int, string) {
 	prefix := "/var/log/nginx/alp.log"
 	now := time.Now().Unix()
 	err := exec.Command("rm", "-rf", "/home/isucon/webapp/assets/").Run()
-        fmt.Println(err)
+	fmt.Println(err)
 	exec.Command("cp", prefix, fmt.Sprint(prefix, ".", now)).Run()
 	exec.Command("tee", prefix).Run()
 
