@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
@@ -104,10 +103,6 @@ func advertiserId(req *http.Request) string {
 
 func adKey(slot string, id string) string {
 	return "isu4:ad:" + slot + "-" + id
-}
-
-func assetKey(slot string, id string) string {
-	return "isu4:asset:" + slot + "-" + id
 }
 
 func advertiserKey(id string) string {
@@ -323,69 +318,6 @@ func routeGetAdWithId(r render.Render, req *http.Request, params martini.Params)
 	}
 }
 
-func routeGetAdAsset(r render.Render, res http.ResponseWriter, req *http.Request, params martini.Params) {
-	slot := params["slot"]
-	id := params["id"]
-	ad := getAd(req, slot, id)
-	if ad == nil {
-		r.JSON(404, map[string]string{"error": "not_found"})
-		return
-	}
-	content_type := "application/octet-stream"
-	if ad.Type != "" {
-		content_type = ad.Type
-	}
-
-	res.Header().Set("Content-Type", content_type)
-	data, _ := rd.Get(assetKey(slot, id)).Result()
-
-	range_str := req.Header.Get("Range")
-	if range_str == "" {
-		r.Data(200, []byte(data))
-		return
-	}
-
-	re := regexp.MustCompile("^bytes=(\\d*)-(\\d*)$")
-	m := re.FindAllStringSubmatch(range_str, -1)
-
-	if m == nil {
-		r.Status(416)
-		return
-	}
-
-	head_str := m[0][1]
-	tail_str := m[0][2]
-
-	if head_str == "" && tail_str == "" {
-		r.Status(416)
-		return
-	}
-
-	head := 0
-	tail := 0
-
-	if head_str != "" {
-		head, _ = strconv.Atoi(head_str)
-	}
-	if tail_str != "" {
-		tail, _ = strconv.Atoi(tail_str)
-	} else {
-		tail = len(data) - 1
-	}
-
-	if head < 0 || head >= len(data) || tail < 0 {
-		r.Status(416)
-		return
-	}
-
-	range_data := data[head:(tail + 1)]
-	content_range := fmt.Sprintf("bytes %d-%d/%d", head, tail, len(data))
-	res.Header().Set("Content-Range", content_range)
-	res.Header().Set("Content-Length", strconv.Itoa(len(range_data)))
-
-	r.Data(206, []byte(range_data))
-}
-
 func routeGetAdCount(r render.Render, params martini.Params) {
 	slot := params["slot"]
 	id := params["id"]
@@ -579,7 +511,6 @@ func main() {
 		m.Post("/ads", routePostAd)
 		m.Get("/ad", routeGetAd)
 		m.Get("/ads/:id", routeGetAdWithId)
-		m.Get("/ads/:id/asset", routeGetAdAsset)
 		m.Post("/ads/:id/count", routeGetAdCount)
 		m.Get("/ads/:id/redirect", routeGetAdRedirect)
 	})
