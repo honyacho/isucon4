@@ -289,7 +289,7 @@ func routePostAd(r render.Render, req *http.Request, params martini.Params) {
 		r.Status(400)
 		return
 	}
-	defer file.Close()
+	defer newFile.Close()
 	io.Copy(newFile, f)
 
 	r.JSON(200, getAd(req, slot, id))
