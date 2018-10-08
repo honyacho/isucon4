@@ -287,6 +287,7 @@ func routePostAd(r render.Render, req *http.Request, params martini.Params) {
 	newFile, err := os.Create(fmt.Sprintf("/home/isucon/webapp/assets/%s/%s.%s", slot, id, ext))
 	if err != nil {
 		r.Status(401)
+		fmt.Printf("%s\n", err)
 		return
 	}
 	defer newFile.Close()
