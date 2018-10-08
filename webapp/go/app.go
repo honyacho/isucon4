@@ -284,9 +284,15 @@ func routePostAd(r render.Render, req *http.Request, params martini.Params) {
 		return
 	}
 	defer f.Close()
+	err = os.MkdirAll(fmt.Sprintf("/home/isucon/webapp/assets/%s", slot), 0777)
+	if err != nil {
+		r.Status(400)
+		fmt.Printf("%s\n", err)
+		return
+	}
 	newFile, err := os.Create(fmt.Sprintf("/home/isucon/webapp/assets/%s/%s.%s", slot, id, ext))
 	if err != nil {
-		r.Status(401)
+		r.Status(400)
 		fmt.Printf("%s\n", err)
 		return
 	}
