@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"time"
 	"io"
 	"net/http"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"os/exec"
 
 	"github.com/go-martini/martini"
 	"github.com/go-redis/redis"
@@ -539,6 +541,13 @@ func routePostInitialize() (int, string) {
 	path := getDir("log")
 	os.RemoveAll(path)
 
+	prefix := "/var/log/nginx/alp.log"
+	now := time.Now().Unix()
+	os.Rename(prefix, fmt.Sprint(prefix, ".", now))
+
+	exec.Command("cp", prefix, fmt.Sprint(prefix, ".", now)).Run()
+	exec.Command("tee", prefix).Run()
+
 	return 200, "OK"
 }
 
@@ -563,5 +572,8 @@ func main() {
 		m.Get("/final_report", routeGetFinalReport)
 	})
 	m.Post("/initialize", routePostInitialize)
-	http.ListenAndServe(":8080", m)
+	err := http.ListenAndServe(":8080", m)
+	if err != nil {
+		panic(err)
+	}
 }
