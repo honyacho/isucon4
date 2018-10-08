@@ -3,16 +3,16 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"time"
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path"
 	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
-	"os/exec"
+	"time"
 
 	"github.com/go-martini/martini"
 	"github.com/go-redis/redis"
@@ -277,7 +277,7 @@ func routePostAd(r render.Render, req *http.Request, params martini.Params) {
 	rd.SAdd(advertiserKey(advrId), key)
 
 	// assetをファイルに出力する
-	ext := path.Ext(asset.FileName)
+	ext := path.Ext(asset.Filename)
 	f, err := asset.Open()
 	if err != nil {
 		r.Status(400)
