@@ -2,12 +2,12 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"time"
 	"io"
 	"net/http"
 	"os"
+	"path"
 	"regexp"
 	"strconv"
 	"strings"
@@ -273,15 +273,20 @@ func routePostAd(r render.Render, req *http.Request, params martini.Params) {
 		"impressions", "0",
 	)
 
-	f, _ := asset.Open()
-	defer f.Close()
-	buf := bytes.NewBuffer(nil)
-	io.Copy(buf, f)
-	asset_data := string(buf.Bytes())
-
-	rd.Set(assetKey(slot, id), asset_data)
 	rd.RPush(slotKey(slot), id)
 	rd.SAdd(advertiserKey(advrId), key)
+
+	// assetをファイルに出力する
+	ext := path.Ext(asset.FileName)
+	f, err := asset.Open()
+	if err != nil {
+		r.Status(400)
+		return
+	}
+	defer f.Close()
+	newFile, err := os.Create(fmt.Printf("/home/isucon/webapp/assets/%s/%s.%s", slot, id, ext))
+	defer file.Close()
+	io.Copy(newFile, f)
 
 	r.JSON(200, getAd(req, slot, id))
 }
