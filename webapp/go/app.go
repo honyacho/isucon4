@@ -480,6 +480,27 @@ func routeGetFinalReport(req *http.Request, r render.Render) {
 	r.JSON(200, reports)
 }
 
+func routeAssetRedirect(req *http.Request, r render.Render, params martini.Params) {
+	slot := params["slot"]
+	id := params["id"]
+	ad := getAd(req, slot, id)
+	if ad == nil {
+		r.JSON(404, map[string]string{"error": "not_found"})
+		return
+  }
+
+	advertiserId, _ := strconv.ParseInt(ad.Advertiser, 64, 64)
+
+	host := "172.31.27.236"
+	if 5 <= advertiserId && advertiserId <= 8 {
+		host = "172.31.31.75"
+	} else if 9 <= advertiserId && advertiserId <= 12 {
+		host = "172.31.28.46"
+	}
+
+	r.Redirect(fmt.Sprintf("http://%s:8080/%s", host, req.URL.Path), 303)
+}
+
 func routePostInitialize() (int, string) {
 	keys, _ := rd.Keys("isu4:*").Result()
 	for i := range keys {
@@ -513,6 +534,7 @@ func main() {
 		m.Get("/ads/:id", routeGetAdWithId)
 		m.Post("/ads/:id/count", routeGetAdCount)
 		m.Get("/ads/:id/redirect", routeGetAdRedirect)
+		m.Get("/ads/:id/asset", routeAssetRedirect)
 	})
 	m.Group("/me", func(r martini.Router) {
 		m.Get("/report", routeGetReport)
